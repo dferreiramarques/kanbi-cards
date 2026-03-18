@@ -5,6 +5,8 @@ services:
     buildCommand: npm install
     startCommand: node server.js
     envVars:
+      - key: NODE_VERSION
+        value: 20
       - key: STRIPE_SECRET_KEY
         sync: false
       - key: STRIPE_WEBHOOK_SECRET
