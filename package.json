@@ -1,12 +1,10 @@
 {
   "name": "kanbi-cards",
   "version": "1.0.0",
-  "description": "Kamishibai board — flip cards from red to green",
+  "description": "Kamishibai board",
   "type": "module",
-  "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js"
+    "start": "node server.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
@@ -14,6 +12,6 @@
     "stripe": "^14.14.0"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": "20.x"
   }
 }
