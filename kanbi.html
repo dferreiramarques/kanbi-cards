@@ -9,6 +9,37 @@
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <!-- Google Identity Services -->
 <script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+// Global callback for Google Sign-In data-callback attribute
+// Must be defined before Google script calls it
+window.handleGoogleCredential = function(response) {
+  if(!response || !response.credential) return;
+  try {
+    var parts = response.credential.split('.');
+    var payload = JSON.parse(atob(parts[1].replace(/-/g,'+').replace(/_/g,'/')));
+    var email = payload.email;
+    var name = payload.name || email.split('@')[0];
+    var picture = payload.picture || null;
+    if(typeof checkPaid === 'function'){
+      checkPaid(email).then(function(paid){
+        var u = {email:email, name:name, picture:picture, isPaid:paid, provider:'google'};
+        if(typeof LS !== 'undefined') LS.set('kanbi_user', u);
+        if(typeof user !== 'undefined') user = u;
+        if(typeof closeModalById === 'function') closeModalById('modal-login');
+        if(typeof renderAuth === 'function') renderAuth();
+        if(typeof pendingUpgrade !== 'undefined' && pendingUpgrade){
+          pendingUpgrade = false;
+          if(!paid && typeof goToStripe === 'function') setTimeout(function(){ goToStripe(email); }, 300);
+          return;
+        }
+        if(!paid && typeof openUpgrade === 'function') setTimeout(openUpgrade, 400);
+      });
+    }
+  } catch(e) {
+    console.error('Google credential error:', e);
+  }
+};
+</script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
@@ -765,8 +796,23 @@ body::before{
     <h2 id="login-modal-title">// sign_in</h2>
     <p id="login-modal-sub">Sign in with Google to sync your boards across devices.</p>
 
-    <!-- Google SSO — rendered button (more reliable than prompt) -->
-    <div id="google-signin-btn" style="display:flex;justify-content:center;margin-bottom:4px;min-height:44px"></div>
+    <!-- Google SSO — auto-rendered by Google script via data attributes -->
+    <div id="g_id_onload"
+      data-client_id="640641223632-kk96c0l69h9gm93fr4f7ckftecn42386.apps.googleusercontent.com"
+      data-callback="handleGoogleCredential"
+      data-auto_select="false"
+      data-cancel_on_tap_outside="true">
+    </div>
+    <div class="g_id_signin"
+      id="google-signin-btn"
+      data-type="standard"
+      data-theme="filled_black"
+      data-size="large"
+      data-text="continue_with"
+      data-width="320"
+      data-logo_alignment="left"
+      style="display:flex;justify-content:center;margin-bottom:4px;min-height:44px">
+    </div>
 
     <div class="modal-error" id="login-error" style="display:none;margin-top:8px"></div>
     <div class="modal-actions" style="margin-top:8px">
