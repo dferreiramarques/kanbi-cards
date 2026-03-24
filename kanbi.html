@@ -30,9 +30,8 @@ window.handleGoogleCredential = function(response) {
         if(typeof pendingUpgrade !== 'undefined' && pendingUpgrade){
           pendingUpgrade = false;
           if(!paid && typeof goToStripe === 'function') setTimeout(function(){ goToStripe(email); }, 300);
-          return;
         }
-        if(!paid && typeof openUpgrade === 'function') setTimeout(openUpgrade, 400);
+        // No auto-redirect to upgrade — user decides when to upgrade
       });
     }
   } catch(e) {
@@ -682,7 +681,7 @@ body::before{
     <span>⚡</span>
     <span>Local mode — data lives in this browser. <strong>Sign in</strong> to sync across devices.</span>
     <div class="spacer"></div>
-    <button class="btn btn-primary btn-sm" onclick="openUpgrade()">Go Pro</button>
+    <button class="btn btn-primary btn-sm" onclick="userOpenUpgrade()">Go Pro</button>
   </div>
 
   <div class="footer">
@@ -1202,6 +1201,38 @@ function goToStripe(email){
 }
 
 // Override openUpgrade: SSO first if not logged in, else go direct to Stripe
+// Override renderAuth to show avatar properly
+var _origRenderAuth = typeof renderAuth === 'function' ? renderAuth : function(){};
+renderAuth = function(){
+  var el = document.getElementById('header-auth');
+  if(!el) return;
+  var themeBtn = '<button class="theme-toggle" id="theme-toggle-btn" onclick="toggleTheme()" title="Toggle theme">🌙</button>';
+  if(user && user.email){
+    var avatar = user.picture
+      ? '<img src="'+user.picture+'" referrerpolicy="no-referrer" style="width:28px;height:28px;border-radius:50%;border:2px solid var(--green-border);object-fit:cover">'
+      : '<div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#a78bfa);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff">'+(user.name||user.email)[0].toUpperCase()+'</div>';
+    if(user.isPaid){
+      el.innerHTML = themeBtn
+        + '<div style="display:flex;align-items:center;gap:6px;background:rgba(34,211,160,.1);border:1px solid var(--green-border);border-radius:20px;padding:4px 10px 4px 5px">'
+        + avatar
+        + '<span style="font-family:var(--mono);font-size:11px;font-weight:600;color:var(--green)">PRO</span></div>'
+        + '<button class="btn btn-sm" style="margin-left:4px" onclick="logout()">sign out</button>';
+    } else {
+      el.innerHTML = themeBtn
+        + avatar
+        + '<button class="btn btn-primary btn-sm" style="margin-left:6px" onclick="userOpenUpgrade()">Upgrade</button>'
+        + '<button class="btn btn-sm" style="margin-left:4px" onclick="logout()">sign out</button>';
+    }
+  } else {
+    el.innerHTML = themeBtn
+      + '<button class="btn btn-sm" onclick="openLogin(false)">sign in</button>'
+      + '<button class="btn btn-primary btn-sm" style="margin-left:6px" onclick="userOpenUpgrade()">Go Pro</button>';
+  }
+  // Restore theme icon
+  var tb = document.getElementById('theme-toggle-btn');
+  if(tb && typeof currentTheme !== 'undefined') tb.textContent = currentTheme === 'dark' ? '🌙' : '☀️';
+};
+
 var _origOpenUpgrade=typeof openUpgrade==='function'?openUpgrade:function(){};
 openUpgrade=function(){
   if(user&&user.email){
@@ -1276,7 +1307,7 @@ doEmailLogin=async function(){
     if(!paid){setTimeout(function(){goToStripe(email);},300);}
     return;
   }
-  if(!paid)setTimeout(function(){_origOpenUpgrade();},400);
+  // No auto-upgrade redirect — user initiates
 };
 </script>
 
@@ -1322,9 +1353,28 @@ openModalById=function(id){
 };
 
 // openUpgrade always shows the modal now (with features+price)
+// Only open upgrade if user explicitly clicked — 
+// block auto-calls from obfuscated code via a flag
+var _upgradeUserInitiated = false;
+var _origOpenUpgradeModal = function(){ openModalById('modal-upgrade'); };
+
 openUpgrade=function(){
+  // If called from setTimeout in obfuscated code without user gesture, block it
+  if(!_upgradeUserInitiated){
+    // Check if this was triggered by a setTimeout (no user event on stack)
+    try {
+      if(!window.event && !_upgradeUserInitiated) return;
+    } catch(e){}
+  }
+  _upgradeUserInitiated = false;
   openModalById('modal-upgrade');
 };
+
+// Wrap button clicks to set the flag
+function userOpenUpgrade(){
+  _upgradeUserInitiated = true;
+  openUpgrade();
+}
 </script>
 
 
