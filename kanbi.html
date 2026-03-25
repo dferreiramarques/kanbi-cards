@@ -624,10 +624,7 @@ body::before{
       <span class="logo-text">kanbi<span class="logo-sub">.cards</span></span>
       <span class="logo-badge">BETA</span>
     </div>
-    <div style="display:flex;align-items:center;gap:8px;justify-content:flex-end">
-      <button class="theme-toggle" id="theme-toggle-btn" onclick="toggleTheme()" title="Toggle theme">🌙</button>
-      <div id="header-auth" style="display:flex;align-items:center;gap:6px"></div>
-    </div>
+    <div id="header-auth" style="display:flex;align-items:center;gap:6px;justify-content:flex-end"></div>
   </div>
   <div class="tabs-wrap">
     <div class="tabs" id="tabs-row">
@@ -1172,16 +1169,23 @@ var SUPABASE_ANON_KEY = "sb_publishable_3UkCUFnB8auJHbB-TwJJOQ_B0rVzGxo";
 checkPaid = async function(email) {
   try {
     var res = await fetch(
-      SUPABASE_URL + '/rest/v1/paid_users?email=eq.' + encodeURIComponent(email) + '&select=email',
+      SUPABASE_URL + '/rest/v1/paid_users?email=eq.' + encodeURIComponent(email.toLowerCase().trim()) + '&select=email&limit=1',
       {
         headers: {
           'apikey': SUPABASE_ANON_KEY,
-          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+          'Accept': 'application/json'
         }
       }
     );
-    if (!res.ok) return false;
+    console.log('checkPaid status:', res.status, 'for', email);
+    if (!res.ok) {
+      var err = await res.text();
+      console.error('Supabase error:', err);
+      return false;
+    }
     var data = await res.json();
+    console.log('checkPaid result:', data);
     return Array.isArray(data) && data.length > 0;
   } catch(e) {
     console.error('Supabase check failed:', e);
