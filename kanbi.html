@@ -31,7 +31,13 @@ window.handleGoogleCredential = function(response) {
           pendingUpgrade = false;
           if(!paid && typeof goToStripe === 'function') setTimeout(function(){ goToStripe(email); }, 300);
         }
-        // No auto-redirect to upgrade — user decides when to upgrade
+        // Load cloud boards if Pro
+        if(paid && typeof cloudLoad === 'function'){
+          cloudLoad().then(function(loaded){
+            if(loaded && typeof renderBoard === 'function') renderBoard();
+          });
+        }
+        // No auto-redirect to upgrade — user decides when to update
       });
     }
   } catch(e) {
@@ -1165,6 +1171,48 @@ updateBar=function(done,total){
 var SUPABASE_URL = "https://rdwmqhgcjkfniahtofgt.supabase.co";
 var SUPABASE_ANON_KEY = "sb_publishable_3UkCUFnB8auJHbB-TwJJOQ_B0rVzGxo";
 
+/* ── Cloud sync for Pro users ── */
+async function cloudSave(){
+  if(!user||!user.isPaid||!user.email) return;
+  try {
+    await fetch(SUPABASE_URL+'/rest/v1/user_boards', {
+      method:'POST',
+      headers:{
+        'apikey':SUPABASE_ANON_KEY,
+        'Authorization':'Bearer '+SUPABASE_ANON_KEY,
+        'Content-Type':'application/json',
+        'Prefer':'resolution=merge-duplicates'
+      },
+      body:JSON.stringify({
+        email:user.email.toLowerCase().trim(),
+        tasks:tasks,
+        states:states,
+        resets:LS.get('kanbi_resets')||{},
+        updated_at:new Date().toISOString()
+      })
+    });
+  } catch(e){ console.error('Cloud save failed:',e); }
+}
+
+async function cloudLoad(){
+  if(!user||!user.isPaid||!user.email) return false;
+  try {
+    var res = await fetch(
+      SUPABASE_URL+'/rest/v1/user_boards?email=eq.'+encodeURIComponent(user.email.toLowerCase().trim())+'&select=tasks,states,resets&limit=1',
+      { headers:{'apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY} }
+    );
+    if(!res.ok) return false;
+    var data = await res.json();
+    if(!data||!data.length) return false;
+    var row = data[0];
+    if(row.tasks)  { tasks=row.tasks;   LS.set('kanbi_tasks',tasks); }
+    if(row.states) { states=row.states; LS.set('kanbi_states',states); }
+    if(row.resets) LS.set('kanbi_resets',row.resets);
+    console.log('Cloud data loaded for',user.email);
+    return true;
+  } catch(e){ console.error('Cloud load failed:',e); return false; }
+}
+
 /* Override checkPaid to use real Supabase lookup */
 checkPaid = async function(email) {
   try {
@@ -1383,6 +1431,13 @@ function userOpenUpgrade(){
 
 
 <script>
+/* ── Cloud save hook ── */
+var _origSave = typeof save === 'function' ? save : function(){};
+save = function(){
+  _origSave();
+  if(typeof cloudSave === 'function') cloudSave();
+};
+
 /* ── THEME TOGGLE ── */
 var currentTheme = LS.get('kanbi_theme') || 'dark';
 
