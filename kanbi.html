@@ -1174,24 +1174,32 @@ var SUPABASE_ANON_KEY = "sb_publishable_3UkCUFnB8auJHbB-TwJJOQ_B0rVzGxo";
 /* ── Cloud sync for Pro users ── */
 async function cloudSave(){
   if(!user||!user.isPaid||!user.email) return;
+  var email = user.email.toLowerCase().trim();
+  var payload = {
+    email:email,
+    tasks:tasks,
+    states:states,
+    resets:LS.get('kanbi_resets')||{},
+    updated_at:new Date().toISOString()
+  };
   try {
-    await fetch(SUPABASE_URL+'/rest/v1/user_boards', {
+    var res = await fetch(SUPABASE_URL+'/rest/v1/user_boards', {
       method:'POST',
       headers:{
         'apikey':SUPABASE_ANON_KEY,
         'Authorization':'Bearer '+SUPABASE_ANON_KEY,
         'Content-Type':'application/json',
-        'Prefer':'resolution=merge-duplicates'
+        'Prefer':'resolution=merge-duplicates,return=minimal'
       },
-      body:JSON.stringify({
-        email:user.email.toLowerCase().trim(),
-        tasks:tasks,
-        states:states,
-        resets:LS.get('kanbi_resets')||{},
-        updated_at:new Date().toISOString()
-      })
+      body:JSON.stringify(payload)
     });
-  } catch(e){ console.error('Cloud save failed:',e); }
+    if(!res.ok){
+      var err = await res.text();
+      console.error('Cloud save failed:', res.status, err);
+    } else {
+      console.log('Cloud saved ok for', email);
+    }
+  } catch(e){ console.error('Cloud save exception:',e); }
 }
 
 async function cloudLoad(){
