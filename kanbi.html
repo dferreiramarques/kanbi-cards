@@ -1104,12 +1104,19 @@ setTimeout(function(){
   }
   renderOwnerBar();
   initOwnerAutocomplete();
-  // pre-assign colors to existing owners so chips are consistent
   getAllOwners().forEach(function(o){getOwnerColor(o);});
-  // Force our card renderer so obfuscated onclick cards are replaced immediately
   renderBoardFiltered();
-  // Handle Stripe return
   handleStripeReturn();
+  // If already logged in as Pro from a previous session, load cloud data
+  if(user && user.isPaid && typeof cloudLoad === 'function'){
+    cloudLoad().then(function(loaded){
+      if(loaded){
+        renderOwnerBar();
+        renderBoardFiltered();
+        console.log('Cloud data loaded on startup');
+      }
+    });
+  }
 },0);
 </script>
 
@@ -1319,7 +1326,10 @@ openLogin=function(forUpgrade){
     if(title)title.textContent='// sign_in';
     if(sub)sub.textContent='Sign in to sync your boards. Pro users get cloud storage automatically.';
   }
-  _origOpenLogin();
+  // Safe call - ignore errors from removed email field
+  try{ _origOpenLogin(); } catch(e){}
+  // Re-render Google button
+  setTimeout(function(){ if(typeof renderGoogleBtn==='function') renderGoogleBtn(); }, 150);
 };
 
 // After SSO/email login, if pendingUpgrade → go to Stripe
@@ -1443,7 +1453,10 @@ function userOpenUpgrade(){
 var _origSave = typeof save === 'function' ? save : function(){};
 save = function(){
   _origSave();
-  if(typeof cloudSave === 'function') cloudSave();
+  // Only cloud save if user is Pro
+  if(user && user.isPaid && typeof cloudSave === 'function'){
+    cloudSave();
+  }
 };
 
 /* ── THEME TOGGLE ── */
