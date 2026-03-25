@@ -1453,9 +1453,18 @@ function userOpenUpgrade(){
 var _origSave = typeof save === 'function' ? save : function(){};
 save = function(){
   _origSave();
-  // Only cloud save if user is Pro
-  if(user && user.isPaid && typeof cloudSave === 'function'){
-    cloudSave();
+  if(user && user.isPaid && typeof cloudSave === 'function') cloudSave();
+};
+
+// Belt-and-suspenders: intercept localStorage writes to detect any save
+var _origSetItem = localStorage.setItem.bind(localStorage);
+localStorage.setItem = function(key, value){
+  _origSetItem(key, value);
+  if(key === 'kanbi_tasks' || key === 'kanbi_states'){
+    if(user && user.isPaid && typeof cloudSave === 'function'){
+      clearTimeout(window._cloudSaveTimer);
+      window._cloudSaveTimer = setTimeout(cloudSave, 800); // debounce 800ms
+    }
   }
 };
 
