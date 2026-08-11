@@ -6,9 +6,20 @@
 
 ## What is this?
 
-Kamishibai is a lean management technique where physical cards signal task status — red means pending, green means done. This is a digital version built for weekly, monthly, and annual task cycles, with a dark glassmorphism UI and owner filtering.
+Kamishibai is a lean management technique where physical cards signal task status — red means pending, green means done. This is a digital version built for weekly, monthly, and annual task cycles, with a light/dark UI (David Marques Design System — Figtree + Fluent 2) and owner filtering.
 
 **Live:** [kanbi.cards](https://kanbi.cards)
+
+---
+
+## Status
+
+The app is now **fully free** — the Stripe paywall UI ("Go Pro" / "Upgrade") has been removed from the frontend. Cloud sync is mid-migration:
+
+- Sign in with Google still works.
+- The old Supabase-backed cloud sync is now dormant (no UI path makes an account "paid" anymore).
+- It's being replaced with **per-user Google Drive storage** — sign in, and your boards save to your own Drive — mirroring the pattern used in the `taskboards` project. Not shipped yet.
+- The Stripe/Supabase code still lives in `server.js` for now; it'll be removed once Drive sync lands.
 
 ---
 
@@ -16,12 +27,13 @@ Kamishibai is a lean management technique where physical cards signal task statu
 
 - **3 cycles** — Weekly (resets Monday), Monthly (resets 1st), Annual (resets Jan 1st)
 - **All cards view** — see every cycle at a glance
-- **Flip animation** — cards flip horizontally from red → green on click
-- **Owner system** — assign owners to cards, filter by owner, color-coded chips
+- **Flip animation** — square cards flip horizontally from red → green on click, outline + gradient only
+- **Owner system** — assign owners to cards, filter by owner (color-coded chips), cards left blank are grouped under an "unassigned" filter
 - **Confetti** — fires when a cycle hits 100%
 - **Auto-reset** — cards return to red at the start of each cycle automatically
-- **Free tier** — local storage, works offline, no account needed
-- **Pro tier (€9 lifetime)** — cloud sync across devices via Supabase
+- **Light / dark theme** — explicit switch (☀️/🌙) next to sign in, remembers your choice
+- **Installable PWA** — install button (desktop + mobile) via the native browser prompt where supported, with manual instructions as a fallback (iOS Safari, desktop Safari, Firefox); works offline once installed
+- **Free, local-first** — local storage, works offline, no account required
 
 ---
 
@@ -30,12 +42,13 @@ Kamishibai is a lean management technique where physical cards signal task statu
 | Layer | Tool |
 |---|---|
 | Frontend | Vanilla HTML + CSS + JS (single file) |
-| Hosting | Vercel |
-| Database | Supabase |
-| Payments | Stripe (Payment Link) |
+| Hosting | Vercel / Render / Railway |
 | Auth | Google SSO (Google Identity Services) |
+| Cloud sync | Supabase *(legacy, dormant — being replaced by Google Drive)* |
+| Payments | Stripe *(legacy — paywall removed from UI, backend cleanup pending)* |
+| Offline / install | Service worker (`sw.js`) + Web App Manifest (`manifest.json`) |
 
-No framework. No bundler. One `.html` file.
+No framework. No bundler. One `.html` file plus a PWA shell (`manifest.json`, `sw.js`, `icons/`).
 
 ---
 
@@ -46,10 +59,24 @@ No framework. No bundler. One `.html` file.
 open kanbi.html
 ```
 
-That's it. No `npm install`, no build step.
+That's it. No `npm install`, no build step. Note: the install button and offline caching only work when `kanbi.html` is served alongside `manifest.json`, `sw.js` and `icons/` from the same origin (e.g. via `node server.js`, or any static file server) — opening the raw file with `file://` skips service worker registration.
+
+```bash
+# To test the PWA bits locally
+npm install
+node server.js
+# → http://localhost:3000
+```
 
 ---
 
+## PWA / installing
+
+- `manifest.json` — app name, theme colors, icons (`icons/icon-192.png`, `icon-512.png`, `icon-512-maskable.png`).
+- `sw.js` — network-first for `kanbi.html` (so updates aren't stuck behind a stale cache), cache-first for icons/manifest. Bump `CACHE_NAME` in `sw.js` on every deploy to evict old assets.
+- Install button lives in the header, next to sign in. On Chrome/Edge/Android it triggers the native `beforeinstallprompt` flow; everywhere else (iOS Safari, desktop Safari, Firefox) it opens a small modal with manual "Add to Home Screen" instructions. Hides itself once the app is already running standalone.
+
+---
 
 ## Deploying to Render (free tier, no credit card)
 
@@ -73,9 +100,9 @@ git push -u origin main
    - **Start command:** `node server.js`
    - **Instance type:** Free
 
-### 3. Add environment variables
+### 3. Environment variables
 
-In Render Dashboard → your service → **Environment**:
+The app runs fine with **no environment variables** now that the paywall is gone. Only set these if you're keeping the legacy Stripe/Supabase code alive for testing:
 
 ```
 STRIPE_SECRET_KEY       = sk_live_...
@@ -92,15 +119,7 @@ Click **Deploy** — live in ~2 minutes at `kanbi-cards.onrender.com`.
 > ⚠️ Free tier on Render spins down after 15 min of inactivity (cold start ~30s).
 > Fine for testing. For production use Railway or Vercel.
 
-### 5. Stripe webhook URL
-
-In Stripe Dashboard → Developers → Webhooks → Add endpoint:
-```
-https://kanbi-cards.onrender.com/api/webhook
-```
-Event: `checkout.session.completed`
-
-### 6. Add domain (when ready)
+### 5. Add domain (when ready)
 
 Render Dashboard → your service → **Custom Domains** → add `kanbi.cards`
 
@@ -111,13 +130,10 @@ Render Dashboard → your service → **Custom Domains** → add `kanbi.cards`
 Railway is the recommended production host — no sleep, €5/month, one-click deploy from GitLab.
 
 1. Go to [railway.app](https://railway.app) → New Project → Deploy from repo
-2. Same environment variables as Render
+2. No required environment variables (see above)
 3. Add custom domain in Settings
 
-
 ## Deploying to production (Vercel alternative)
-
-### 1. Vercel
 
 ```bash
 npm i -g vercel
@@ -126,9 +142,21 @@ vercel --name kanbi-cards
 
 Add your domain under **Settings → Domains**.
 
-### 2. Supabase
+### Google SSO
 
-Create a project at [supabase.com](https://supabase.com) and run this SQL:
+1. Go to [console.cloud.google.com](https://console.cloud.google.com)
+2. Create an OAuth 2.0 Client ID (Web application)
+3. Add your domain to Authorized JavaScript Origins
+4. The Client ID is already wired into `kanbi.html`'s `g_id_onload` config — swap it for your own if you fork this.
+
+---
+
+## Legacy: Stripe / Supabase (being phased out)
+
+These are still present in `server.js` and parts of `kanbi.html` but are no longer reachable from the UI. Kept here for reference until the Google Drive migration replaces them.
+
+<details>
+<summary>Supabase schema</summary>
 
 ```sql
 create table paid_users (
@@ -150,107 +178,49 @@ create table user_boards (
 alter table paid_users enable row level security;
 alter table user_boards enable row level security;
 ```
+</details>
 
-### 3. Stripe
+<details>
+<summary>Stripe webhook</summary>
 
-1. Create a one-time product for €9
-2. Generate a **Payment Link**
-3. Set the success URL to `https://kanbi.cards?success=1`
-4. Add a webhook for `checkout.session.completed` → `https://kanbi.cards/api/webhook`
-
-### 4. Google SSO
-
-1. Go to [console.cloud.google.com](https://console.cloud.google.com)
-2. Create an OAuth 2.0 Client ID (Web application)
-3. Add your domain to Authorized JavaScript Origins
-4. Copy the Client ID into `kanbi.html`:
-
-```js
-const GOOGLE_CLIENT_ID = "your-client-id.apps.googleusercontent.com";
+In Stripe Dashboard → Developers → Webhooks → Add endpoint:
 ```
-
-### 5. Webhook (Vercel serverless function)
-
-Create `api/webhook.js`:
-
-```js
-import Stripe from 'stripe';
-import { createClient } from '@supabase/supabase-js';
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
-
-export default async function handler(req, res) {
-  const event = stripe.webhooks.constructEvent(
-    req.body, req.headers['stripe-signature'], process.env.STRIPE_WEBHOOK_SECRET
-  );
-  if (event.type === 'checkout.session.completed') {
-    const { email, name } = event.data.object.customer_details;
-    await supabase.from('paid_users').upsert({ email, name });
-  }
-  res.json({ received: true });
-}
+https://kanbi-cards.onrender.com/api/webhook
 ```
+Event: `checkout.session.completed`
+</details>
 
-### 6. Environment variables (Vercel)
-
-```
-STRIPE_SECRET_KEY        = sk_live_...
-STRIPE_WEBHOOK_SECRET    = whsec_...
-SUPABASE_URL             = https://xxxx.supabase.co
-SUPABASE_SERVICE_KEY     = eyJ...
-```
-
-Also update these constants in `kanbi.html`:
-
-```js
-const GOOGLE_CLIENT_ID = "xxxx.apps.googleusercontent.com";
-const SUPABASE_URL     = "https://xxxx.supabase.co";
-const SUPABASE_KEY     = "eyJ..."; // anon key
-```
-
----
-
-## Adding a paid user manually
-
-Until the webhook is live, add users directly in Supabase:
+<details>
+<summary>Adding a paid user manually (legacy)</summary>
 
 ```sql
 insert into paid_users (email, name) values ('user@example.com', 'Name');
 ```
 
 Or via the Supabase dashboard → Table editor → `paid_users` → Insert row.
-
----
-
-## Pricing & terms
-
-- **Free** — unlimited cards, local storage only
-- **Pro — €9 lifetime** — cloud sync, multi-device
-
-"Lifetime" means the operational lifetime of the service, not the customer's lifetime. If the service is shut down, paying customers receive 60 days notice. Purchases under 1 year old receive a full refund. See full terms in the app.
+</details>
 
 ---
 
 ## Costs
 
-| Service | Free tier covers |
+| Service | Notes |
 |---|---|
-| Vercel | ~100k visits/month |
-| Supabase | 50k rows, 500MB |
-| Stripe | 1.5% + €0.25 per transaction |
+| Vercel / Render / Railway | Free tier covers low traffic |
+| Google SSO | Free |
+| Supabase | Legacy, dormant — can be decommissioned once Drive sync ships |
 | Domain (kanbi.cards) | ~€35/year |
 
-**Total fixed cost to run: ~€35/year.**
+**No per-transaction costs anymore — the app doesn't take payments.**
 
 ---
 
 ## Roadmap
 
-- [ ] Supabase sync for Pro users
+- [ ] Google Drive sync (per-user, free) — replaces Supabase, mirrors the `taskboards` pattern
+- [ ] Remove Stripe/Supabase code from `server.js` once Drive sync ships
 - [ ] Team boards (shared owners)
 - [ ] API access
-- [ ] PWA install prompt
 - [ ] Mobile swipe to flip
 
 ---

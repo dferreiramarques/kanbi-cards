@@ -1340,6 +1340,9 @@ renderAuth = function(){
   if(typeof currentTheme !== 'undefined') markActiveThemeOpt(currentTheme);
   // Restore install button visibility (innerHTML swap above wiped it out)
   if(typeof updateInstallBtnVisibility === 'function') updateInstallBtnVisibility();
+  // "Local mode, sign in to sync" banner only makes sense when signed out
+  var freeBanner = document.getElementById('free-banner');
+  if(freeBanner) freeBanner.style.display = (user && user.email) ? 'none' : 'flex';
 };
 
 function markActiveThemeOpt(theme){
@@ -1399,12 +1402,9 @@ handleGoogleCredential=function(response){
     LS.set('kanbi_user',user);
     closeModalById('modal-login');
     renderAuth();
-    if(pendingUpgrade){
-      pendingUpgrade=false;
-      if(!paid){setTimeout(function(){goToStripe(email);},300);}
-      return;
-    }
-    if(!paid)setTimeout(function(){_origOpenUpgrade();},400);
+    // Paywall removed from the UI — never auto-open the upgrade modal
+    // after sign-in, no matter what checkPaid() returns.
+    pendingUpgrade=false;
   });
 };
 
