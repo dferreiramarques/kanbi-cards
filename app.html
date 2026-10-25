@@ -197,15 +197,6 @@ body{
 .chip::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
 .chip--info{background:color-mix(in srgb, var(--accent) 14%, transparent);color:var(--accent)}
 
-/* single icon toggle (theme) */
-.btn-ico{
-  width:34px;padding:0;justify-content:center;
-  background:transparent;border-color:transparent;
-  color:var(--sub2);
-}
-.btn-ico:hover{background:var(--f-bg4);color:var(--text)}
-.btn-ico svg{width:18px;height:18px;display:block}
-
 /* user pill + dropdown (suite: Roadmaps user menu) */
 .user{position:relative}
 .user__btn{
@@ -265,6 +256,14 @@ body{
 .btn-danger{background:var(--red-dim);color:var(--red);border-color:var(--red-border)}
 .btn-danger:hover{background:color-mix(in srgb, var(--red) 20%, transparent)}
 .btn-sm{padding:5px 11px;font-size:12px}
+
+/* single icon toggle (theme) — declared AFTER .btn so its overrides win the cascade */
+.btn-ico{
+  width:34px;height:34px;padding:0;justify-content:center;
+  background:transparent;border-color:transparent;
+}
+.btn-ico:hover{background:var(--f-bg4);border-color:transparent;color:var(--text)}
+.btn-ico svg{width:18px;height:18px;display:block}
 .btn-google{
   background:var(--f-bg3);
   border:1px solid var(--border2);
@@ -1350,7 +1349,7 @@ function goToStripe(email){
 var _THEME_MOON='M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z';
 var _THEME_SUN='M12 3v2m0 14v2m9-9h-2M5 12H3m15.36 6.36-1.41-1.41M7.05 7.05 5.64 5.64m12.72 0-1.41 1.41M7.05 16.95l-1.41 1.41';
 function _themeIcoSvg(inner){
-  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+inner+'</svg>';
+  return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+inner+'</svg>';
 }
 function paintThemeIco(){
   var b=document.getElementById('btn-theme');
