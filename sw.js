@@ -1,6 +1,6 @@
 // Kanbi Cards — offline shell cache
 // Bump CACHE_NAME on every deploy so old assets get evicted.
-const CACHE_NAME = 'kanbi-cards-v3-product-page';
+const CACHE_NAME = 'kanbi-cards-v4-icons';
 const ASSETS = [
   './',
   './index.html',
