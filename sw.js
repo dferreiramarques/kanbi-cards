@@ -1,9 +1,11 @@
 // Kanbi Cards — offline shell cache
 // Bump CACHE_NAME on every deploy so old assets get evicted.
-const CACHE_NAME = 'kanbi-cards-v1';
+const CACHE_NAME = 'kanbi-cards-v3-product-page';
 const ASSETS = [
   './',
-  './kanbi.html',
+  './index.html',
+  './app.html',
+  './product-page.css',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',
@@ -30,7 +32,9 @@ self.addEventListener('fetch', (e) => {
 
   // Network-first for the app shell so users get fixes/bug patches without
   // waiting for the cache to expire; fall back to cache when offline.
-  const isShell = e.request.mode === 'navigate' || e.request.url.endsWith('/kanbi.html');
+  const isShell = e.request.mode === 'navigate'
+    || e.request.url.endsWith('/app.html')
+    || e.request.url.endsWith('/index.html');
   if (isShell) {
     e.respondWith(
       fetch(e.request)
@@ -39,7 +43,7 @@ self.addEventListener('fetch', (e) => {
           caches.open(CACHE_NAME).then((c) => c.put(e.request, copy));
           return res;
         })
-        .catch(() => caches.match(e.request).then((cached) => cached || caches.match('./kanbi.html')))
+        .catch(() => caches.match(e.request).then((cached) => cached || caches.match('./app.html')))
     );
     return;
   }

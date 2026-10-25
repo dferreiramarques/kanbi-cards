@@ -6,7 +6,7 @@
 
 ## What is this?
 
-Kamishibai is a lean management technique where physical cards signal task status — red means pending, green means done. This is a digital version built for weekly, monthly, and annual task cycles, with a light/dark UI (David Marques Design System — Figtree + Fluent 2) and owner filtering.
+Kamishibai is a lean management technique where physical cards signal task status — red means pending, green means done. This is a digital version built for weekly, monthly, and annual task cycles. The visual language is harmonized with the **[monco.io](https://www.monco.io) suite** (Roadmaps style: Inter + JetBrains Mono, zinc surfaces, Aura-like tokens) with Kanbi's own violet accent, light/dark theme and owner filtering.
 
 **Live:** [kanbi.cards](https://kanbi.cards)
 
@@ -20,6 +20,12 @@ The app is now **fully free** — the Stripe paywall UI ("Go Pro" / "Upgrade") h
 - The old Supabase-backed cloud sync is now dormant (no UI path makes an account "paid" anymore).
 - It's being replaced with **per-user Google Drive storage** — sign in, and your boards save to your own Drive — mirroring the pattern used in the `taskboards` project. Not shipped yet.
 - The Stripe/Supabase code still lives in `server.js` for now; it'll be removed once Drive sync lands.
+
+---
+
+## Monco.io suite
+
+Kanbi Cards is part of the **[monco.io](https://www.monco.io) suite** together with [Roadmaps](https://roadmaps.monco.io) and [Taskboards](https://taskboards.monco.io). All products share the same design system: `product-page.css` defines the shared tokens (Inter + JetBrains Mono, zinc surfaces, Aura-like radii 6/8/12/16px, soft shadows, 3px focus rings) and each product only overrides its accent in its own pages — Kanbi's accent is **violet**. kanbi.cards follows the suite's layout too: a product page at `/` (landing) and the board app at `/app.html`.
 
 ---
 
@@ -55,11 +61,11 @@ No framework. No bundler. One `.html` file plus a PWA shell (`manifest.json`, `s
 ## Getting started locally
 
 ```bash
-# Just open the file
-open kanbi.html
+# Just open the app page
+open app.html
 ```
 
-That's it. No `npm install`, no build step. Note: the install button and offline caching only work when `kanbi.html` is served alongside `manifest.json`, `sw.js` and `icons/` from the same origin (e.g. via `node server.js`, or any static file server) — opening the raw file with `file://` skips service worker registration.
+That's it. No `npm install`, no build step. Note: the install button and offline caching only work when the pages are served alongside `manifest.json`, `sw.js` and `icons/` from the same origin (e.g. via `node server.js`, or any static file server) — opening the raw file with `file://` skips service worker registration.
 
 ```bash
 # To test the PWA bits locally
@@ -73,7 +79,7 @@ node server.js
 ## PWA / installing
 
 - `manifest.json` — app name, theme colors, icons (`icons/icon-192.png`, `icon-512.png`, `icon-512-maskable.png`).
-- `sw.js` — network-first for `kanbi.html` (so updates aren't stuck behind a stale cache), cache-first for icons/manifest. Bump `CACHE_NAME` in `sw.js` on every deploy to evict old assets.
+- `sw.js` — network-first for the pages (`index.html` landing + `app.html` board, so updates aren't stuck behind a stale cache), cache-first for icons/manifest. Bump `CACHE_NAME` in `sw.js` on every deploy to evict old assets.
 - Install button lives in the header, next to sign in. On Chrome/Edge/Android it triggers the native `beforeinstallprompt` flow; everywhere else (iOS Safari, desktop Safari, Firefox) it opens a small modal with manual "Add to Home Screen" instructions. Hides itself once the app is already running standalone.
 
 ---
@@ -147,13 +153,13 @@ Add your domain under **Settings → Domains**.
 1. Go to [console.cloud.google.com](https://console.cloud.google.com)
 2. Create an OAuth 2.0 Client ID (Web application)
 3. Add your domain to Authorized JavaScript Origins
-4. The Client ID is already wired into `kanbi.html`'s `g_id_onload` config — swap it for your own if you fork this.
+4. The Client ID is already wired into `app.html`'s `g_id_onload` config — swap it for your own if you fork this.
 
 ---
 
 ## Legacy: Stripe / Supabase (being phased out)
 
-These are still present in `server.js` and parts of `kanbi.html` but are no longer reachable from the UI. Kept here for reference until the Google Drive migration replaces them.
+These are still present in `server.js` and parts of `app.html` but are no longer reachable from the UI. Kept here for reference until the Google Drive migration replaces them.
 
 <details>
 <summary>Supabase schema</summary>

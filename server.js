@@ -89,13 +89,13 @@ app.get('/health', (req, res) => res.json({ status: 'ok', time: new Date().toISO
 // ── Serve static files
 app.use(express.static(__dirname));
 
-// ── Catch-all → kanbi.html
+// ── Catch-all → product page (landing)
 app.get('*', (req, res) => {
-  res.sendFile(join(__dirname, 'kanbi.html'));
+  res.sendFile(join(__dirname, 'index.html'));
 });
 
 app.listen(PORT, () => {
-  console.log(`kanbi.cards running on port ${PORT}`);
+  console.log(`kanbi.cards running on port ${PORT} (landing: index.html · app: app.html)`);
   console.log(`Supabase: ${process.env.SUPABASE_URL ? 'configured' : 'NOT configured'}`);
   console.log(`Stripe:   ${process.env.STRIPE_SECRET_KEY ? 'configured' : 'NOT configured'}`);
 });
