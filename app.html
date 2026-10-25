@@ -152,21 +152,6 @@ window.handleGoogleCredential = function(response) {
 
 /* theme toggle button */
 
-/* theme toggle button */
-.theme-switch{
-  display:flex;align-items:center;gap:2px;
-  background:var(--surface2);border:1px solid var(--border2);
-  border-radius:var(--f-rpill);padding:2px;flex-shrink:0;
-}
-.theme-opt{
-  width:26px;height:26px;border:none;border-radius:var(--f-rpill);
-  background:transparent;color:var(--sub2);cursor:pointer;
-  font-size:12px;display:flex;align-items:center;justify-content:center;
-  opacity:.5;transition:background var(--f-fast) var(--f-ease),opacity var(--f-fast) var(--f-ease),box-shadow var(--f-fast) var(--f-ease);
-}
-.theme-opt:hover{opacity:.85}
-.theme-opt.active{background:var(--f-bg1);opacity:1;box-shadow:var(--f-shadow2)}
-
 body{font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
 
 /* ── RADIAL TOP GLOW (suite: soft brand halo at the top of the page) ── */
@@ -182,7 +167,11 @@ body{
   backdrop-filter:saturate(1.4) blur(10px);-webkit-backdrop-filter:saturate(1.4) blur(10px);
   border-bottom:1px solid var(--border);
 }
-.topbar__in{display:flex;align-items:center;gap:14px;min-height:60px;flex-wrap:wrap;padding:10px var(--f-space-6)}
+.topbar__in{
+  display:flex;align-items:center;gap:14px;min-height:60px;flex-wrap:wrap;
+  max-width:var(--f-wrap,1180px);margin:0 auto;
+  padding:10px var(--f-space-6);
+}
 
 .brand{
   display:flex;align-items:center;gap:10px;
@@ -197,6 +186,61 @@ body{
   flex-shrink:0;
 }
 .brand__mark svg{width:18px;height:18px}
+
+/* status chip (suite: sync pill à la Roadmaps) */
+.chip{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:4px 12px;border-radius:var(--f-rpill);
+  font-size:.75rem;font-weight:600;white-space:nowrap;
+  background:var(--surface2);color:var(--sub2);
+}
+.chip::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+.chip--info{background:color-mix(in srgb, var(--accent) 14%, transparent);color:var(--accent)}
+
+/* single icon toggle (theme) */
+.btn-ico{
+  width:34px;padding:0;justify-content:center;
+  background:transparent;border-color:transparent;
+  color:var(--sub2);
+}
+.btn-ico:hover{background:var(--f-bg4);color:var(--text)}
+.btn-ico svg{width:18px;height:18px;display:block}
+
+/* user pill + dropdown (suite: Roadmaps user menu) */
+.user{position:relative}
+.user__btn{
+  display:flex;align-items:center;gap:8px;
+  height:36px;padding:0 14px 0 5px;
+  border:1px solid var(--border2);border-radius:var(--f-rpill);
+  background:var(--surface2);color:var(--text);cursor:pointer;
+  font-family:var(--sans);font-size:.875rem;font-weight:500;
+  transition:background var(--f-fast) var(--f-ease);
+}
+.user__btn:hover{background:var(--f-bg4)}
+.user__avatar{
+  width:28px;height:28px;border-radius:50%;
+  object-fit:cover;flex-shrink:0;
+  display:inline-grid;place-items:center;
+  font-size:.75rem;font-weight:700;color:#fff;
+  background:var(--accent);
+}
+.user__name{max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.user__menu{
+  position:absolute;right:0;top:calc(100% + 8px);
+  min-width:230px;background:var(--surface);
+  border:1px solid var(--border2);border-radius:var(--f-r8);
+  box-shadow:var(--f-shadow28);padding:6px;z-index:60;
+}
+.user__email{padding:8px 10px;color:var(--sub2);font-size:.8125rem;overflow:hidden;text-overflow:ellipsis}
+.user__item{
+  display:block;width:100%;text-align:left;padding:8px 10px;
+  border:0;border-radius:var(--f-r4);background:none;
+  font-size:.875rem;color:var(--text);cursor:pointer;
+  font-family:var(--sans);text-decoration:none;
+  transition:background var(--f-fast) var(--f-ease);
+}
+.user__item:hover{background:var(--f-bg3)}
+.user__sep{height:1px;background:var(--border);margin:6px 4px}
 
 .spacer{flex:1}
 
@@ -503,6 +547,7 @@ body{
 /* ── MOBILE ── */
 @media (max-width: 600px) {
   .topbar__in{gap:8px;padding:10px 14px}
+  #sync-chip{display:none}
   .brand{font-size:.9rem;gap:7px}
   .brand__mark{width:28px;height:28px;border-radius:var(--f-r4)}
   .brand__mark svg{width:15px;height:15px}
@@ -645,7 +690,8 @@ body{
       <button class="tab" data-tab="all">all cards</button>
     </div>
     <span class="spacer"></span>
-    <div id="header-auth" style="display:flex;align-items:center;gap:6px;justify-content:flex-end"></div>
+    <span class="chip" id="sync-chip">local mode</span>
+    <div id="header-auth" style="display:flex;align-items:center;gap:8px;justify-content:flex-end"></div>
   </div>
   <div class="tab-ink" id="tab-ink" style="display:none"></div>
 </header>
@@ -1299,33 +1345,55 @@ function goToStripe(email){
 }
 
 // Override openUpgrade: SSO first if not logged in, else go direct to Stripe
-// Override renderAuth to show avatar properly
+// Override renderAuth: suite-style right side — theme icon toggle, install,
+// and a user pill with dropdown (à la Roadmaps)
+var _THEME_MOON='M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z';
+var _THEME_SUN='M12 3v2m0 14v2m9-9h-2M5 12H3m15.36 6.36-1.41-1.41M7.05 7.05 5.64 5.64m12.72 0-1.41 1.41M7.05 16.95l-1.41 1.41';
+function _themeIcoSvg(inner){
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+inner+'</svg>';
+}
+function paintThemeIco(){
+  var b=document.getElementById('btn-theme');
+  if(!b)return;
+  var dark=(typeof currentTheme!=='undefined')?currentTheme:'dark';
+  b.innerHTML=dark
+    ? _themeIcoSvg('<path d="'+_THEME_SUN+'"/><circle cx="12" cy="12" r="4"/>')
+    : _themeIcoSvg('<path d="'+_THEME_MOON+'"/>');
+}
+window.paintThemeIco=paintThemeIco;
+
 var _origRenderAuth = typeof renderAuth === 'function' ? renderAuth : function(){};
 renderAuth = function(){
   var el = document.getElementById('header-auth');
   if(!el) return;
-  var themeBtn = '<div class="theme-switch" role="group" aria-label="Theme">'
-    + '<button class="theme-opt" data-theme-opt="light" onclick="setTheme(&quot;light&quot;)" title="Light theme">☀️</button>'
-    + '<button class="theme-opt" data-theme-opt="dark" onclick="setTheme(&quot;dark&quot;)" title="Dark theme">🌙</button>'
-    + '</div>';
-  var installBtn = '<button class="btn btn-sm" id="btn-install" onclick="triggerInstall()" style="display:none;margin-left:6px" title="Install app">'
+  var themeBtn = '<button class="btn btn-ico" id="btn-theme" onclick="toggleTheme()" aria-label="Toggle light / dark theme" title="Light / dark theme"></button>';
+  var installBtn = '<button class="btn btn-sm" id="btn-install" onclick="triggerInstall()" style="display:none" title="Install app">'
     + '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><polyline points="7 10 12 15 17 10"/><path d="M5 21h14"/></svg>'
     + '<span class="install-btn-label">Install</span></button>';
+  var chip = document.getElementById('sync-chip');
   if(user && user.email){
+    if(chip){ chip.textContent='signed in'; chip.classList.add('chip--info'); }
     var avatar = user.picture
-      ? '<img src="'+user.picture+'" referrerpolicy="no-referrer" style="width:28px;height:28px;border-radius:50%;border:2px solid var(--green-border);object-fit:cover">'
-      : '<div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#a78bfa);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff">'+(user.name||user.email)[0].toUpperCase()+'</div>';
-    el.innerHTML = themeBtn
-      + installBtn
-      + avatar
-      + '<button class="btn btn-sm" style="margin-left:6px" onclick="logout()">sign out</button>';
+      ? '<img class="user__avatar" src="'+user.picture+'" alt="" referrerpolicy="no-referrer">'
+      : '<span class="user__avatar">'+((user.name||user.email)[0].toUpperCase())+'</span>';
+    el.innerHTML = themeBtn + installBtn
+      + '<div class="user" id="user">'
+      +   '<button class="user__btn" id="user-btn" onclick="toggleUserMenu(event)" aria-haspopup="true" aria-expanded="false">'
+      +     avatar + '<span class="user__name">'+esc(user.name||user.email.split('@')[0])+'</span>'
+      +   '</button>'
+      +   '<div class="user__menu" id="user-menu" style="display:none" role="menu">'
+      +     '<div class="user__email">'+esc(user.email)+'</div>'
+      +     '<a class="user__item" href="./">About kanbi.cards</a>'
+      +     '<div class="user__sep"></div>'
+      +     '<button class="user__item" onclick="closeUserMenu();logout()">Sign out</button>'
+      +   '</div>'
+      + '</div>';
   } else {
-    el.innerHTML = themeBtn
-      + installBtn
+    if(chip){ chip.textContent='local mode'; chip.classList.remove('chip--info'); }
+    el.innerHTML = themeBtn + installBtn
       + '<button class="btn btn-sm" onclick="openLogin(false)">sign in</button>';
   }
-  // Restore theme switch active state
-  if(typeof currentTheme !== 'undefined') markActiveThemeOpt(currentTheme);
+  paintThemeIco();
   // Restore install button visibility (innerHTML swap above wiped it out)
   if(typeof updateInstallBtnVisibility === 'function') updateInstallBtnVisibility();
   // "Local mode, sign in to sync" banner only makes sense when signed out
@@ -1333,11 +1401,22 @@ renderAuth = function(){
   if(freeBanner) freeBanner.style.display = (user && user.email) ? 'none' : 'flex';
 };
 
-function markActiveThemeOpt(theme){
-  document.querySelectorAll('.theme-opt').forEach(function(b){
-    b.classList.toggle('active', b.getAttribute('data-theme-opt') === theme);
-  });
+function toggleUserMenu(e){
+  e.stopPropagation();
+  var m = document.getElementById('user-menu');
+  if(!m) return;
+  var open = m.style.display === 'none';
+  m.style.display = open ? 'block' : 'none';
+  var b = document.getElementById('user-btn');
+  if(b) b.setAttribute('aria-expanded', open ? 'true' : 'false');
 }
+function closeUserMenu(){
+  var m = document.getElementById('user-menu');
+  if(m) m.style.display = 'none';
+}
+document.addEventListener('click', function(e){
+  if(!e.target.closest('#user')) closeUserMenu();
+});
 
 // Force an immediate render with the new markup (the original init() ran
 // before this override replaced renderAuth, so header-auth would otherwise
@@ -1516,7 +1595,7 @@ var currentTheme = LS.get('kanbi_theme') || 'dark';
 function applyTheme(theme){
   currentTheme = theme;
   document.documentElement.setAttribute('data-theme', theme);
-  if(typeof markActiveThemeOpt === 'function') markActiveThemeOpt(theme);
+  if(typeof paintThemeIco === 'function') paintThemeIco();
   LS.set('kanbi_theme', theme);
 }
 
