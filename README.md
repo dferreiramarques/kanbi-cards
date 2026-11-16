@@ -12,6 +12,14 @@ Kamishibai is a lean management technique where physical cards signal task statu
 
 ---
 
+## Google Drive sync
+
+Boards live in the browser. When someone signs in with Google, they are also saved in that person's own Google Drive (a private app folder), so they follow the user across devices. The server stores nothing: it only serves the pages and exchanges Google tokens (`auth.js`, a refresh token in an encrypted httpOnly cookie). It is the same method as the other nimble apps; see the [nimble starter](https://github.com/dferreiramarques/nimble-starter).
+
+To enable it, set these variables on the host (Render): `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `COOKIE_SECRET` (a long random string) and `PUBLIC_URL` (e.g. `https://kanbi.cards`). In Google Cloud: enable the Drive API, add the scope `.../auth/drive.appdata` to the consent screen and `<site>/auth/callback` to the OAuth client's redirect URIs. Without them the app keeps working locally, exactly as before.
+
+`drive.js` is the sync module (the safety rules are tested in `test/drive.test.js`); `kanbi-sync.js` maps the `kanbi_*` browser storage keys to and from the synced document. `npm test` runs the sign-in loop against a fake Google and the sync rules against a fake Drive.
+
 ## Status
 
 Kanbi Cards is **free and takes no payments**: there is no Pro tier, no checkout and no server-side account. Boards live in your browser. Signing in with Google only puts your name on your boards. Syncing across devices through **your own Google Drive** (the pattern used in `taskboards`) is planned and will stay free.

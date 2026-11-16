@@ -2,6 +2,7 @@
 <html lang="en" data-theme="dark" data-accent="violet">
 <head>
 <meta name="nimble-theme-key" content="kanbi_theme">
+<meta name="app-id" content="kanbi">
 <script src="./nimble/theme.js"></script>
 <link rel="stylesheet" href="./nimble/tokens.css">
 <meta charset="UTF-8">
@@ -971,7 +972,7 @@ renderAuth = function(){
     + '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="M7 11l5 5 5-5"/><path d="M5 21h14"/></svg></button>';
   var chip = document.getElementById('sync-chip');
   if(user && user.email){
-    if(chip){ chip.textContent='saved on this device'; chip.title='Your boards are saved in this browser. Cloud sync is not available yet.'; chip.classList.remove('chip--info'); chip.classList.add('chip--ok'); }
+    if(window.kanbiSync) kanbiSync.paint();
     var avatar = user.picture
       ? '<img class="user__avatar" src="'+user.picture+'" alt="" referrerpolicy="no-referrer">'
       : '<span class="user__avatar">'+((user.name||user.email)[0].toUpperCase())+'</span>';
@@ -982,14 +983,14 @@ renderAuth = function(){
       +   '</button>'
       +   '<div class="user__menu" id="user-menu" style="display:none" role="menu">'
       +     '<div class="user__email">'+esc(user.email)+'</div>'
-      +     '<div class="user__email">Saved on this device</div>'
+      +     '<div class="user__email" id="user-sync-line">'+(window.kanbiSync?kanbiSync.label():'saved on this device')+'</div>'
       +     '<a class="user__item" href="./">About kanbi.cards</a>'
       +     '<div class="user__sep"></div>'
       +     '<button class="user__item" onclick="closeUserMenu();logout()">Sign out</button>'
       +   '</div>'
       + '</div>';
   } else {
-    if(chip){ chip.textContent='saved on this device'; chip.title='Your boards are saved in this browser. Sign in to put your name on them.'; chip.classList.remove('chip--info'); chip.classList.add('chip--ok'); }
+    if(window.kanbiSync) kanbiSync.paint();
     el.innerHTML = themeBtn + installBtn
       + '<button class="btn btn-sm" onclick="openLogin(false)">sign in</button>';
   }
@@ -1067,6 +1068,15 @@ doEmailLogin=async function(){
   closeModalById('modal-login');
   renderAuth();
 };
+</script>
+<script src="./drive.js"></script>
+<script src="./kanbi-sync.js"></script>
+<script>
+/* Drive sync: sign in through this site (authorization-code flow) when it is configured; otherwise the old identity-only dialog */
+var _openLoginLocal=openLogin;
+openLogin=function(){ if(window.kanbiSync&&kanbiSync.enabled){ kanbiSignIn(); return; } _openLoginLocal.apply(this,arguments); };
+var _logoutLocal=logout;
+logout=function(){ var a=arguments; if(window.kanbiSync&&kanbiSync.enabled){ kanbiSignOut().then(function(){ _logoutLocal.apply(null,a); }); } else _logoutLocal.apply(null,a); };
 </script>
 
 
