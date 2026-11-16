@@ -1,11 +1,13 @@
 // Kanbi Cards — offline shell cache
 // Bump CACHE_NAME on every deploy so old assets get evicted.
-const CACHE_NAME = 'kanbi-cards-v5-roadmaps-style';
+const CACHE_NAME = 'kanbi-cards-v6-nimbleui';
 const ASSETS = [
   './',
   './index.html',
   './app.html',
-  './product-page.css',
+  './nimble/tokens.css',
+  './nimble/components.css',
+  './nimble/theme.js',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',
