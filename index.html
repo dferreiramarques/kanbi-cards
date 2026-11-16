@@ -1,12 +1,8 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="dark" data-accent="violet">
 <head>
-    <script>
-        (function () {
-            // Same key the app (app.html) writes — theme carries over between landing and board
-            document.documentElement.setAttribute('data-theme', localStorage.getItem('kanbi_theme') || 'dark');
-        })();
-    </script>
+    <meta name="nimble-theme-key" content="kanbi_theme">
+    <script src="./nimble/theme.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#6a57f0">
@@ -17,18 +13,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <title>Kanbi Cards — Flip Your Tasks Done, Cycle After Cycle</title>
-    <link rel="stylesheet" href="./product-page.css">
+    <link rel="stylesheet" href="./nimble/tokens.css">
+    <link rel="stylesheet" href="./nimble/components.css">
     <style>
-        /* Kanbi Cards accent. Colours only: every size, space and radius comes from product-page.css
-           (shared with Roadmaps, Taskboards and Diagramico). */
         [data-theme="light"] {
-            --primary: #6a57f0; --primary-h: #5a47e0; --primary-ink: #ffffff;
-            --primary-soft: rgba(106, 87, 240, .14); --glow: rgba(106, 87, 240, .10);
             --z-pending: #dc2626; --z-done: #059669;
         }
         [data-theme="dark"] {
-            --primary: #7c6af7; --primary-h: #8f7cf8; --primary-ink: #ffffff;
-            --primary-soft: rgba(124, 106, 247, .16); --glow: rgba(124, 106, 247, .12);
             --z-pending: #f87171; --z-done: #34d399;
         }
         :root {
@@ -95,8 +86,7 @@
                 <a href="#how">How it works</a>
             </nav>
             <span class="grow"></span>
-            <button class="btn btn--text btn--icon" id="themeToggle" aria-label="Toggle light / dark theme" title="Toggle theme">
-                <svg class="ico" id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"></svg>
+            <button class="btn btn--text btn--icon" data-theme-toggle data-theme-icon aria-label="Toggle light / dark theme" title="Toggle theme">
             </button>
             <a class="btn btn--primary" href="app.html">Open the app</a>
         </div>
@@ -257,33 +247,5 @@
         </div>
     </footer>
 
-    <script>
-        (function () {
-            var moon = 'M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z';
-            var sun = 'M12 3v2m0 14v2m9-9h-2M5 12H3m15.36 6.36-1.41-1.41M7.05 7.05 5.64 5.64m12.72 0-1.41 1.41M7.05 16.95l-1.41 1.41';
-            var icon = document.getElementById('themeIcon');
-            var btn = document.getElementById('themeToggle');
-
-            function paint() {
-                var mode = document.documentElement.getAttribute('data-theme');
-                var isDark = mode === 'dark' || (mode !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-                if (isDark) {
-                    icon.innerHTML = '<path d="' + sun + '"/><circle cx="12" cy="12" r="4"/>';
-                } else {
-                    icon.innerHTML = '<path d="' + moon + '"/>';
-                }
-            }
-
-            btn.addEventListener('click', function () {
-                var current = document.documentElement.getAttribute('data-theme') || 'dark';
-                var next = current === 'dark' ? 'light' : 'dark';
-                document.documentElement.setAttribute('data-theme', next);
-                localStorage.setItem('kanbi_theme', next);
-                paint();
-            });
-
-            paint();
-        })();
-    </script>
 </body>
 </html>

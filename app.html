@@ -1,6 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark" data-accent="violet">
 <head>
+<meta name="nimble-theme-key" content="kanbi_theme">
+<script src="./nimble/theme.js"></script>
+<link rel="stylesheet" href="./nimble/tokens.css">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#6a57f0">
@@ -60,49 +63,10 @@ window.handleGoogleCredential = function(response) {
    Structure (sizes, radii, spacing, shadow geometry) is defined ONCE
    here; the [data-theme] blocks below only swap colours.
    ════════════════════════════════════════════════════════════════ */
+/* Tokens (colours, radii, shadows, fonts, violet accent) come from nimbleUI: nimble/tokens.css, loaded first. */
 :root{
-  --font:'Inter',ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
   --sans:var(--font);
-  --mono:'JetBrains Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;
-
-  --r-sm:6px; --r-md:8px; --r-lg:12px; --r-xl:16px; --r-pill:999px;
-  --ring:3px;
-  --ease:cubic-bezier(.2,.7,.2,1); --fast:140ms; --norm:220ms;
-  --wrap:1180px;
-
-  --sh-sm:0 1px 2px var(--shadow-c);
-  --sh-md:0 4px 6px -1px var(--shadow-c),0 2px 4px -2px var(--shadow-c);
-  --sh-lg:0 20px 25px -5px var(--shadow-c),0 8px 10px -6px var(--shadow-c);
-
-  /* light (default) colours */
-  color-scheme:light;
-  --bg:#fafafa; --surface:#ffffff; --surface-2:#f4f4f5; --surface-3:#e4e4e7;
-  --border:#e4e4e7; --border-strong:#d4d4d8;
-  --text:#18181b; --muted:#52525b; --subtle:#71717a;
-  --primary:#6a57f0; --primary-h:#5a47e0; --primary-ink:#ffffff;
-  --primary-soft:rgba(106,87,240,.14); --glow:rgba(106,87,240,.10);
-  --shadow-c:rgba(24,24,27,.10); --overlay:rgba(24,24,27,.45);
-  --success:#059669; --info:#0284c7; --warn:#d97706; --danger:#dc2626; --secondary:#475569;
-}
-[data-theme="light"]{
-  color-scheme:light;
-  --bg:#fafafa; --surface:#ffffff; --surface-2:#f4f4f5; --surface-3:#e4e4e7;
-  --border:#e4e4e7; --border-strong:#d4d4d8;
-  --text:#18181b; --muted:#52525b; --subtle:#71717a;
-  --primary:#6a57f0; --primary-h:#5a47e0; --primary-ink:#ffffff;
-  --primary-soft:rgba(106,87,240,.14); --glow:rgba(106,87,240,.10);
-  --shadow-c:rgba(24,24,27,.10); --overlay:rgba(24,24,27,.45);
-  --success:#059669; --info:#0284c7; --warn:#d97706; --danger:#dc2626; --secondary:#475569;
-}
-[data-theme="dark"]{
-  color-scheme:dark;
-  --bg:#09090b; --surface:#18181b; --surface-2:#1f1f23; --surface-3:#27272a;
-  --border:#27272a; --border-strong:#3f3f46;
-  --text:#fafafa; --muted:#a1a1aa; --subtle:#71717a;
-  --primary:#8b7bf8; --primary-h:#a598fa; --primary-ink:#ffffff;
-  --primary-soft:rgba(139,123,248,.16); --glow:rgba(139,123,248,.12);
-  --shadow-c:rgba(0,0,0,.55); --overlay:rgba(0,0,0,.6);
-  --success:#34d399; --info:#38bdf8; --warn:#fbbf24; --danger:#f87171; --secondary:#94a3b8;
+  --r-pill:999px;
 }
 
 /* legacy aliases used by inline styles / JS */
@@ -1475,13 +1439,16 @@ localStorage.setItem = function(key, value){
 };
 
 /* ── THEME TOGGLE ── */
-var currentTheme = LS.get('kanbi_theme') || 'dark';
+// The theme is stored as a plain string ('light' | 'dark'), the same value nimble/theme.js and the landing read and write
+// (the app's LS helper stores JSON, which the landing could not read). Older quoted values are still understood.
+function storedTheme(){ try{ var v=String(localStorage.getItem('kanbi_theme')||'').replace(/^"|"$/g,''); return v==='light'||v==='dark'?v:null; }catch(e){ return null; } }
+var currentTheme = storedTheme() || (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
 
-function applyTheme(theme){
+function applyTheme(theme, persist){
   currentTheme = theme;
   document.documentElement.setAttribute('data-theme', theme);
   if(typeof paintThemeIco === 'function') paintThemeIco();
-  LS.set('kanbi_theme', theme);
+  if(persist !== false){ try{ localStorage.setItem('kanbi_theme', theme); }catch(e){} }   // only a user choice is saved: until then the theme follows the system
 }
 
 function setTheme(theme){
@@ -1492,8 +1459,9 @@ function toggleTheme(){
   applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
 }
 
-// Apply saved theme immediately on load
-applyTheme(currentTheme);
+// Apply saved theme immediately on load (not persisted: no choice yet)
+applyTheme(currentTheme, false);
+if(window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e){ if(!storedTheme()) applyTheme(e.matches ? 'dark' : 'light', false); });
 </script>
 
 <script>
