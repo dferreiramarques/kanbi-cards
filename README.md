@@ -14,12 +14,7 @@ Kamishibai is a lean management technique where physical cards signal task statu
 
 ## Status
 
-The app is now **fully free** — the Stripe paywall UI ("Go Pro" / "Upgrade") has been removed from the frontend. Cloud sync is mid-migration:
-
-- Sign in with Google still works.
-- The old Supabase-backed cloud sync is now dormant (no UI path makes an account "paid" anymore).
-- It's being replaced with **per-user Google Drive storage** — sign in, and your boards save to your own Drive — mirroring the pattern used in the `taskboards` project. Not shipped yet.
-- The Stripe/Supabase code still lives in `server.js` for now; it'll be removed once Drive sync lands.
+Kanbi Cards is **free and takes no payments**: there is no Pro tier, no checkout and no server-side account. Boards live in your browser. Signing in with Google only puts your name on your boards. Syncing across devices through **your own Google Drive** (the pattern used in `taskboards`) is planned and will stay free.
 
 ---
 
@@ -50,8 +45,7 @@ Kanbi Cards is part of the **[monco.io](https://www.monco.io) suite** together w
 | Frontend | Vanilla HTML + CSS + JS (single file) |
 | Hosting | Vercel / Render / Railway |
 | Auth | Google SSO (Google Identity Services) |
-| Cloud sync | Supabase *(legacy, dormant — being replaced by Google Drive)* |
-| Payments | Stripe *(legacy — paywall removed from UI, backend cleanup pending)* |
+| Storage | The browser (`localStorage`); Google Drive sync planned |
 | Offline / install | Service worker (`sw.js`) + Web App Manifest (`manifest.json`) |
 
 No framework. No bundler. One `.html` file plus a PWA shell (`manifest.json`, `sw.js`, `icons/`).
@@ -108,15 +102,7 @@ git push -u origin main
 
 ### 3. Environment variables
 
-The app runs fine with **no environment variables** now that the paywall is gone. Only set these if you're keeping the legacy Stripe/Supabase code alive for testing:
-
-```
-STRIPE_SECRET_KEY       = sk_live_...
-STRIPE_WEBHOOK_SECRET   = whsec_...
-SUPABASE_URL            = https://xxxx.supabase.co
-SUPABASE_SERVICE_KEY    = eyJ...
-RESEND_API_KEY          = re_...
-```
+None. The app needs no environment variables.
 
 ### 4. Deploy
 
@@ -157,64 +143,12 @@ Add your domain under **Settings → Domains**.
 
 ---
 
-## Legacy: Stripe / Supabase (being phased out)
-
-These are still present in `server.js` and parts of `app.html` but are no longer reachable from the UI. Kept here for reference until the Google Drive migration replaces them.
-
-<details>
-<summary>Supabase schema</summary>
-
-```sql
-create table paid_users (
-  id uuid default gen_random_uuid() primary key,
-  email text unique not null,
-  name text,
-  created_at timestamptz default now()
-);
-
-create table user_boards (
-  id uuid default gen_random_uuid() primary key,
-  email text not null references paid_users(email),
-  tasks jsonb default '{}',
-  states jsonb default '{}',
-  resets jsonb default '{}',
-  updated_at timestamptz default now()
-);
-
-alter table paid_users enable row level security;
-alter table user_boards enable row level security;
-```
-</details>
-
-<details>
-<summary>Stripe webhook</summary>
-
-In Stripe Dashboard → Developers → Webhooks → Add endpoint:
-```
-https://kanbi-cards.onrender.com/api/webhook
-```
-Event: `checkout.session.completed`
-</details>
-
-<details>
-<summary>Adding a paid user manually (legacy)</summary>
-
-```sql
-insert into paid_users (email, name) values ('user@example.com', 'Name');
-```
-
-Or via the Supabase dashboard → Table editor → `paid_users` → Insert row.
-</details>
-
----
-
 ## Costs
 
 | Service | Notes |
 |---|---|
 | Vercel / Render / Railway | Free tier covers low traffic |
 | Google SSO | Free |
-| Supabase | Legacy, dormant — can be decommissioned once Drive sync ships |
 | Domain (kanbi.cards) | ~€35/year |
 
 **No per-transaction costs anymore — the app doesn't take payments.**
@@ -223,8 +157,7 @@ Or via the Supabase dashboard → Table editor → `paid_users` → Insert row.
 
 ## Roadmap
 
-- [ ] Google Drive sync (per-user, free) — replaces Supabase, mirrors the `taskboards` pattern
-- [ ] Remove Stripe/Supabase code from `server.js` once Drive sync ships
+- [ ] Google Drive sync (per-user, free), mirrors the `taskboards` pattern
 - [ ] Team boards (shared owners)
 - [ ] API access
 - [ ] Mobile swipe to flip
