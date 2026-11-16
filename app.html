@@ -506,7 +506,7 @@ body{
       <button class="tab" data-tab="all">all cards</button>
     </div>
     <span class="spacer"></span>
-    <span class="chip" id="sync-chip">local mode</span>
+    <span class="chip chip--ok" id="sync-chip">saved on this device</span>
     <div id="header-auth" style="display:flex;align-items:center;gap:8px;justify-content:flex-end"></div>
   </div>
   <div class="tab-ink" id="tab-ink" style="display:none"></div>
@@ -962,7 +962,7 @@ renderAuth = function(){
     + '<span class="install-btn-label">Install</span></button>';
   var chip = document.getElementById('sync-chip');
   if(user && user.email){
-    if(chip){ chip.textContent='signed in'; chip.classList.add('chip--info'); }
+    if(chip){ chip.textContent='saved on this device'; chip.title='Your boards are saved in this browser. Cloud sync is not available yet.'; chip.classList.remove('chip--info'); chip.classList.add('chip--ok'); }
     var avatar = user.picture
       ? '<img class="user__avatar" src="'+user.picture+'" alt="" referrerpolicy="no-referrer">'
       : '<span class="user__avatar">'+((user.name||user.email)[0].toUpperCase())+'</span>';
@@ -973,13 +973,14 @@ renderAuth = function(){
       +   '</button>'
       +   '<div class="user__menu" id="user-menu" style="display:none" role="menu">'
       +     '<div class="user__email">'+esc(user.email)+'</div>'
+      +     '<div class="user__email">Saved on this device</div>'
       +     '<a class="user__item" href="./">About kanbi.cards</a>'
       +     '<div class="user__sep"></div>'
       +     '<button class="user__item" onclick="closeUserMenu();logout()">Sign out</button>'
       +   '</div>'
       + '</div>';
   } else {
-    if(chip){ chip.textContent='local mode'; chip.classList.remove('chip--info'); }
+    if(chip){ chip.textContent='saved on this device'; chip.title='Your boards are saved in this browser. Sign in to put your name on them.'; chip.classList.remove('chip--info'); chip.classList.add('chip--ok'); }
     el.innerHTML = themeBtn + installBtn
       + '<button class="btn btn-sm" onclick="openLogin(false)">sign in</button>';
   }
