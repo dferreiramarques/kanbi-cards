@@ -1,6 +1,6 @@
 // Kanbi Cards — offline shell cache
 // Bump CACHE_NAME on every deploy so old assets get evicted.
-const CACHE_NAME = 'kanbi-cards-v9-free';
+const CACHE_NAME = 'kanbi-cards-v10-free';
 const ASSETS = [
   './',
   './index.html',
@@ -8,6 +8,8 @@ const ASSETS = [
   './nimble/tokens.css',
   './nimble/components.css',
   './nimble/theme.js',
+  './drive.js',
+  './kanbi-sync.js',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',
@@ -31,6 +33,8 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   if (new URL(e.request.url).origin !== self.location.origin) return;
   if (e.request.method !== 'GET') return;
+  const path = new URL(e.request.url).pathname;
+  if (path.startsWith('/auth/') || path.startsWith('/api/')) return;   // sign-in and config always go to the network
 
   // Network-first for the app shell so users get fixes/bug patches without
   // waiting for the cache to expire; fall back to cache when offline.
