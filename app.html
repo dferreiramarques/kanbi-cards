@@ -258,7 +258,8 @@ body{
 .section-empty{padding:0 4px 8px;font-size:.8125rem;color:var(--subtle)}
 
 /* ── GRID ── */
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;width:100%}
+.grid{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;width:100%}
+.grid > .card-wrap{flex:0 0 160px;width:160px}
 
 /* ── CARD FLIP (faces styled as Roadmaps .card) ── */
 .card-wrap{
@@ -468,7 +469,8 @@ body{
   .banner{padding:8px 12px;font-size:.8125rem;gap:7px}
   .action-bar{gap:6px;margin-bottom:12px}
   #board-content > .board-panel{padding:10px;border-radius:var(--r-lg)}
-  .grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .grid{gap:8px}
+  .grid > .card-wrap{flex:0 0 calc((100% - 16px) / 3);width:calc((100% - 16px) / 3)}
   .card-face{padding:10px 8px 16px}
   .card-dot{width:7px;height:7px;top:9px;right:9px}
   .card-tag{font-size:.625rem;top:6px;left:6px;padding:0 5px}
