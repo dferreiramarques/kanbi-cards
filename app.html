@@ -957,9 +957,8 @@ renderAuth = function(){
   var el = document.getElementById('header-auth');
   if(!el) return;
   var themeBtn = '<button class="btn btn-ico" id="btn-theme" onclick="toggleTheme()" aria-label="Toggle light / dark theme" title="Light / dark theme"></button>';
-  var installBtn = '<button class="btn btn-sm" id="btn-install" onclick="triggerInstall()" style="display:none" title="Install app">'
-    + '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><polyline points="7 10 12 15 17 10"/><path d="M5 21h14"/></svg>'
-    + '<span class="install-btn-label">Install</span></button>';
+  var installBtn = '<button class="btn btn-ico" id="btn-install" onclick="triggerInstall()" style="display:none" title="Install app" aria-label="Install app">'
+    + '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="M7 11l5 5 5-5"/><path d="M5 21h14"/></svg></button>';
   var chip = document.getElementById('sync-chip');
   if(user && user.email){
     if(chip){ chip.textContent='saved on this device'; chip.title='Your boards are saved in this browser. Cloud sync is not available yet.'; chip.classList.remove('chip--info'); chip.classList.add('chip--ok'); }
