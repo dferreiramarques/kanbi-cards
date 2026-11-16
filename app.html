@@ -30,26 +30,11 @@ window.handleGoogleCredential = function(response) {
     var email = payload.email;
     var name = payload.name || email.split('@')[0];
     var picture = payload.picture || null;
-    if(typeof checkPaid === 'function'){
-      checkPaid(email).then(function(paid){
-        var u = {email:email, name:name, picture:picture, isPaid:paid, provider:'google'};
-        if(typeof LS !== 'undefined') LS.set('kanbi_user', u);
-        if(typeof user !== 'undefined') user = u;
-        if(typeof closeModalById === 'function') closeModalById('modal-login');
-        if(typeof renderAuth === 'function') renderAuth();
-        if(typeof pendingUpgrade !== 'undefined' && pendingUpgrade){
-          pendingUpgrade = false;
-          if(!paid && typeof goToStripe === 'function') setTimeout(function(){ goToStripe(email); }, 300);
-        }
-        // Load cloud boards if Pro
-        if(paid && typeof cloudLoad === 'function'){
-          cloudLoad().then(function(loaded){
-            if(loaded && typeof renderBoard === 'function') renderBoard();
-          });
-        }
-        // No auto-redirect to upgrade — user decides when to update
-      });
-    }
+    var u = {email:email, name:name, picture:picture, provider:'google'};
+    if(typeof LS !== 'undefined') LS.set('kanbi_user', u);
+    if(typeof user !== 'undefined') user = u;
+    if(typeof closeModalById === 'function') closeModalById('modal-login');
+    if(typeof renderAuth === 'function') renderAuth();
   } catch(e) {
     console.error('Google credential error:', e);
   }
@@ -389,15 +374,6 @@ body{
 .overlay.open .modal{transform:translateY(0) scale(1)}
 .modal h2{font-size:1.125rem;font-weight:600;letter-spacing:-.01em;margin-bottom:6px;color:var(--text)}
 .modal p{font-size:.9375rem;color:var(--muted);line-height:1.6;margin-bottom:20px}
-.features{list-style:none;margin-bottom:20px;display:flex;flex-direction:column;gap:8px}
-.features li{display:flex;align-items:center;gap:9px;font-size:.9375rem;color:var(--muted)}
-.features li::before{content:"✓";color:var(--success);font-weight:700}
-.price-box{
-  background:var(--surface-2);border:1px solid var(--border);
-  border-radius:var(--r-lg);padding:16px;text-align:center;margin-bottom:20px;
-}
-.price-val{font-size:2rem;font-weight:700;letter-spacing:-.02em;color:var(--text)}
-.price-sub{font-size:.8125rem;color:var(--subtle);margin-top:2px}
 .modal-actions{display:flex;flex-direction:column;gap:8px}
 .btn-full{width:100%;height:44px;padding:0 20px;font-size:.9375rem;font-weight:600;text-align:center}
 .modal-error{font-size:.875rem;color:var(--danger);margin-bottom:10px}
@@ -414,9 +390,6 @@ body{
 .user-avatar-placeholder{background:var(--primary);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--primary-ink);font-weight:700}
 
 /* ── T&C & POST-PAY ── */
-.modal-tc{margin-top:12px;text-align:center;font-size:.75rem;color:var(--subtle)}
-.modal-tc a{color:var(--primary);text-decoration:none;font-weight:500}
-.modal-tc a:hover{text-decoration:underline}
 .tc-body{display:flex;flex-direction:column;gap:12px;max-height:55vh;overflow-y:auto;padding-right:4px}
 .tc-body::-webkit-scrollbar{width:4px}
 .tc-body::-webkit-scrollbar-track{background:transparent}
@@ -424,12 +397,6 @@ body{
 .tc-section{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px}
 .tc-label{font-size:.6875rem;font-weight:700;letter-spacing:.1em;color:var(--primary);margin-bottom:6px}
 .tc-section p{font-size:.8125rem;color:var(--muted);line-height:1.6;margin-bottom:0}
-.postpay-box{
-  background:var(--surface-2);border:1px solid var(--border);
-  border-radius:var(--r-lg);padding:20px;display:flex;flex-direction:column;gap:8px;
-}
-.postpay-line{font-size:.875rem;color:var(--muted)}
-.postpay-line.highlight{color:var(--text);font-weight:600;font-size:.9375rem}
 #header-auth{display:flex;align-items:center;gap:8px}
 
 /* ── OWNER FILTERS (Roadmaps .tag-tinted chips) ── */
@@ -596,105 +563,6 @@ body{
   </div>
 </main>
 
-<!-- UPGRADE MODAL -->
-<div class="overlay" id="modal-upgrade" onclick="closeModal('modal-upgrade',event)">
-  <div class="modal">
-    <h2>// upgrade_to_pro</h2>
-    <p>Sync your boards across every device. Never lose a card again.</p>
-    <ul class="features">
-      <li>Cloud sync across all devices</li>
-      <li>Persistent storage — never lose data</li>
-      <li>Team boards (coming soon)</li>
-      <li>API access (coming soon)</li>
-    </ul>
-    <div class="price-box">
-      <div class="price-val">€9</div>
-      <div class="price-sub">one-time · yours forever</div>
-    </div>
-    <div class="modal-actions">
-      <button class="btn-full btn btn-primary" id="upgrade-cta" onclick="handleUpgradeCTA()">
-        <span id="upgrade-cta-text">Sign in with Google &amp; pay · €9 →</span>
-      </button>
-      <button class="btn-full btn" onclick="closeModalById('modal-upgrade')">Maybe later</button>
-    </div>
-    <div class="modal-tc">
-      By purchasing you agree to our <a href="#" onclick="openTc(event)">terms</a>.
-    </div>
-  </div>
-</div>
-
-<!-- TERMS MODAL -->
-<div class="overlay" id="modal-tc" onclick="closeModal('modal-tc',event)">
-  <div class="modal" style="max-width:460px">
-    <h2>// terms_of_service</h2>
-    <div class="tc-body">
-      <div class="tc-section">
-        <div class="tc-label">DEFINITION OF "LIFETIME"</div>
-        <p>A lifetime purchase grants access to Kanbi Cards Pro for the operational lifetime of the service — not indefinitely. "Lifetime" means <em>the life of the product</em>, not the life of the customer. We are transparent about this upfront so there are no surprises.</p>
-      </div>
-      <div class="tc-section">
-        <div class="tc-label">WHAT YOU GET</div>
-        <p>Access to all Pro features for as long as the service runs. No subscriptions, no renewals, no price increases for existing customers while the service is active.</p>
-      </div>
-      <div class="tc-section">
-        <div class="tc-label">SERVICE CONTINUITY & SHUTDOWN RIGHT</div>
-        <p>The operator reserves the right to shut down Kanbi Cards at any time, for any reason — including but not limited to low usage, unsustainable maintenance cost, or personal circumstances. The operator is a single individual, not a corporation.</p>
-        <p style="margin-top:8px">Specifically: if in any rolling 12-month period the service has fewer than <strong style="color:var(--text)">10 active users</strong> (defined as users who logged in at least once), the operator may choose to discontinue the service with no obligation to continue.</p>
-      </div>
-      <div class="tc-section">
-        <div class="tc-label">SHUTDOWN NOTICE & REFUND POLICY</div>
-        <p>In the event of shutdown, the operator will provide a minimum of <strong style="color:var(--text)">60 days written notice</strong> via the email used at registration.</p>
-        <p style="margin-top:8px">Refunds upon shutdown: <strong style="color:var(--text)">pro-rated based on time since purchase</strong> — purchases under 1 year old receive a full refund; purchases over 1 year old receive no refund, as the product was in active use during that period.</p>
-      </div>
-      <div class="tc-section">
-        <div class="tc-label">DATA EXPORT</div>
-        <p>Upon shutdown notice, users will have the full 60-day window to export their data. All board data is exportable as JSON. After service termination, data will be permanently deleted.</p>
-      </div>
-      <div class="tc-section">
-        <div class="tc-label">DATA & PRIVACY</div>
-        <p>Pro users store board data in our database. Free users store data locally in their browser only. We never sell your data or share it with third parties. Your email is used solely for authentication and critical service updates.</p>
-      </div>
-      <div class="tc-section">
-        <div class="tc-label">EARLY REFUND</div>
-        <p>If you are not satisfied within 14 days of purchase, contact us for a full refund, no questions asked.</p>
-      </div>
-    </div>
-    <div class="modal-actions" style="margin-top:20px">
-      <button class="btn-full btn btn-primary" onclick="closeModalById('modal-tc')">Got it</button>
-    </div>
-  </div>
-</div>
-
-<!-- POST-PAYMENT MODAL -->
-<div class="overlay" id="modal-postpay" onclick="closeModal('modal-postpay',event)">
-  <div class="modal" style="text-align:center">
-    <div style="font-size:36px;margin-bottom:16px">⏳</div>
-    <h2 style="margin-bottom:10px">// payment_received</h2>
-    <p style="margin-bottom:20px">Thanks for your purchase. Your account is being activated.</p>
-    <div class="postpay-box" style="text-align:left">
-      <div class="postpay-line highlight" id="postpay-email" style="margin-bottom:4px"></div>
-      <div class="postpay-line" style="display:flex;align-items:center;gap:8px;margin-top:12px">
-        <span style="color:var(--accent);font-size:16px">⚡</span>
-        <span>Your account is being reviewed and activated manually — usually within a few hours.</span>
-      </div>
-      <div class="postpay-line" style="display:flex;align-items:center;gap:8px;margin-top:10px">
-        <span style="color:var(--green);font-size:16px">✉</span>
-        <span>You'll receive a confirmation email as soon as Pro access is enabled.</span>
-      </div>
-      <div class="postpay-line" style="display:flex;align-items:center;gap:8px;margin-top:10px">
-        <span style="color:var(--sub2);font-size:16px">🔒</span>
-        <span>If you don't hear back within 24h, reply to the Stripe receipt email.</span>
-      </div>
-    </div>
-    <div style="margin-top:16px;font-family:var(--sans);font-size:10px;color:var(--sub);letter-spacing:.5px">
-      HONEST SOFTWARE · NO SURPRISES
-    </div>
-    <div class="modal-actions" style="margin-top:18px">
-      <button class="btn-full btn btn-primary" onclick="closeModalById('modal-postpay')">Got it, I'll wait →</button>
-    </div>
-  </div>
-</div>
-
 <!-- INSTALL INSTRUCTIONS MODAL (browsers without an automatic install prompt) -->
 <div class="overlay" id="modal-install" onclick="closeModal('modal-install',event)">
   <div class="modal">
@@ -710,7 +578,7 @@ body{
 <div class="overlay" id="modal-login" onclick="closeModal('modal-login',event)">
   <div class="modal">
     <h2 id="login-modal-title">// sign_in</h2>
-    <p id="login-modal-sub">Sign in with Google to sync your boards across devices.</p>
+    <p id="login-modal-sub">Sign in with Google to put your name on your boards.</p>
 
     <!-- Google SSO — auto-rendered by Google script via data attributes -->
     <div id="g_id_onload"
@@ -994,30 +862,6 @@ renderBoard=function(){
   if(owners.some(function(o){return activeOwners[o]===false;}))renderBoardFiltered();
 };
 
-/* ── Stripe success redirect handler ── */
-function handleStripeReturn(){
-  var params=new URLSearchParams(window.location.search);
-  if(params.get('success')!=='1')return;
-  var email=params.get('email')||'';
-  // Clean URL without reloading
-  window.history.replaceState({},'',window.location.pathname);
-  // Store the email even if not yet activated in Supabase
-  // (webhook may not have fired yet)
-  if(email){
-    // Save user as pending - isPaid will be confirmed on next login
-    if(!user||!user.email){
-      user={email:email,name:email.split('@')[0],picture:null,isPaid:false,provider:'stripe',pending:true};
-      LS.set('kanbi_user',user);
-      renderAuth();
-    }
-    // Populate email in postpay modal
-    var emailEl=document.getElementById('postpay-email');
-    if(emailEl)emailEl.textContent=email+' — Pro activation pending';
-  }
-  // Show postpay modal regardless
-  setTimeout(function(){openModalById('modal-postpay');},400);
-}
-
 /* ── init ── */
 setTimeout(function(){
   if(typeof TAB_META!=='undefined'){
@@ -1032,17 +876,6 @@ setTimeout(function(){
   initOwnerAutocomplete();
   getAllOwners().forEach(function(o){getOwnerColor(o);});
   renderBoardFiltered();
-  handleStripeReturn();
-  // If already logged in as Pro from a previous session, load cloud data
-  if(user && user.isPaid && typeof cloudLoad === 'function'){
-    cloudLoad().then(function(loaded){
-      if(loaded){
-        renderOwnerBar();
-        renderBoardFiltered();
-        console.log('Cloud data loaded on startup');
-      }
-    });
-  }
 },0);
 </script>
 
@@ -1099,101 +932,9 @@ updateBar=function(done,total){
 
 
 
-<script>
-/* ── SUPABASE CONFIG ── */
-var SUPABASE_URL = "https://rdwmqhgcjkfniahtofgt.supabase.co";
-var SUPABASE_ANON_KEY = "sb_publishable_3UkCUFnB8auJHbB-TwJJOQ_B0rVzGxo";
-
-/* ── Cloud sync for Pro users ── */
-async function cloudSave(){
-  if(!user||!user.isPaid||!user.email) return;
-  var email = user.email.toLowerCase().trim();
-  var payload = {
-    email:email,
-    tasks:tasks,
-    states:states,
-    resets:LS.get('kanbi_resets')||{},
-    updated_at:new Date().toISOString()
-  };
-  try {
-    var res = await fetch(SUPABASE_URL+'/rest/v1/user_boards', {
-      method:'POST',
-      headers:{
-        'apikey':SUPABASE_ANON_KEY,
-        'Authorization':'Bearer '+SUPABASE_ANON_KEY,
-        'Content-Type':'application/json',
-        'Prefer':'resolution=merge-duplicates,return=minimal'
-      },
-      body:JSON.stringify(payload)
-    });
-    if(!res.ok){
-      var err = await res.text();
-      console.error('Cloud save failed:', res.status, err);
-    } else {
-      console.log('Cloud saved ok for', email);
-    }
-  } catch(e){ console.error('Cloud save exception:',e); }
-}
-
-async function cloudLoad(){
-  if(!user||!user.isPaid||!user.email) return false;
-  try {
-    var res = await fetch(
-      SUPABASE_URL+'/rest/v1/user_boards?email=eq.'+encodeURIComponent(user.email.toLowerCase().trim())+'&select=tasks,states,resets&limit=1',
-      { headers:{'apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY} }
-    );
-    if(!res.ok) return false;
-    var data = await res.json();
-    if(!data||!data.length) return false;
-    var row = data[0];
-    if(row.tasks)  { tasks=row.tasks;   LS.set('kanbi_tasks',tasks); }
-    if(row.states) { states=row.states; LS.set('kanbi_states',states); }
-    if(row.resets) LS.set('kanbi_resets',row.resets);
-    console.log('Cloud data loaded for',user.email);
-    return true;
-  } catch(e){ console.error('Cloud load failed:',e); return false; }
-}
-
-/* Override checkPaid to use real Supabase lookup */
-checkPaid = async function(email) {
-  try {
-    var res = await fetch(
-      SUPABASE_URL + '/rest/v1/paid_users?email=eq.' + encodeURIComponent(email.toLowerCase().trim()) + '&select=email&limit=1',
-      {
-        headers: {
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
-          'Accept': 'application/json'
-        }
-      }
-    );
-    console.log('checkPaid status:', res.status, 'for', email);
-    if (!res.ok) {
-      var err = await res.text();
-      console.error('Supabase error:', err);
-      return false;
-    }
-    var data = await res.json();
-    console.log('checkPaid result:', data);
-    return Array.isArray(data) && data.length > 0;
-  } catch(e) {
-    console.error('Supabase check failed:', e);
-    return false;
-  }
-};
-</script>
 
 <script>
-/* ── UPGRADE FLOW OVERRIDES ── */
-var pendingUpgrade=false;
-
-function goToStripe(email){
-  var base='https://buy.stripe.com/3cI3cw7Ja4Hbfa11tR6oo00';
-  var url=email?base+'?prefilled_email='+encodeURIComponent(email):base;
-  window.open(url,'_blank');
-}
-
-// Override openUpgrade: SSO first if not logged in, else go direct to Stripe
+/* ── HEADER (theme, install, user pill) ── */
 // Override renderAuth: suite-style right side — theme icon toggle, install,
 // and a user pill with dropdown (à la Roadmaps)
 var _THEME_MOON='M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z';
@@ -1273,171 +1014,65 @@ document.addEventListener('click', function(e){
 // event fired).
 renderAuth();
 
-var _origOpenUpgrade=typeof openUpgrade==='function'?openUpgrade:function(){};
-openUpgrade=function(){
-  if(user&&user.email){
-    if(user.isPaid)return; // already pro
-    goToStripe(user.email);
-    return;
-  }
-  // Not signed in: SSO first
-  pendingUpgrade=true;
-  // Update login modal copy
-  var title=document.getElementById('login-modal-title');
-  var sub=document.getElementById('login-modal-sub');
-  if(title)title.textContent='// one_step_away';
-  if(sub)sub.textContent='Sign in with Google to continue to checkout. Your email will be linked to your Pro licence.';
-  openModalById('modal-login');
-};
+// Kanbi Cards is free: nothing opens an upgrade dialog (older code paths may still call these)
+openUpgrade=function(){};
+function userOpenUpgrade(){}
 
-// Override openLogin to reset modal copy when opened directly
+// The sign-in dialog only identifies the user (no payments, no cloud account)
 var _origOpenLogin=typeof openLogin==='function'?openLogin:function(){};
-openLogin=function(forUpgrade){
+openLogin=function(){
   var title=document.getElementById('login-modal-title');
   var sub=document.getElementById('login-modal-sub');
-  if(!forUpgrade&&!pendingUpgrade){
-    if(title)title.textContent='// sign_in';
-    if(sub)sub.textContent='Sign in to sync your boards. Pro users get cloud storage automatically.';
-  }
+  if(title)title.textContent='// sign_in';
+  if(sub)sub.textContent='Sign in with Google to put your name on your boards.';
   // Safe call - ignore errors from removed email field
   try{ _origOpenLogin(); } catch(e){}
   // Re-render Google button
   setTimeout(function(){ if(typeof renderGoogleBtn==='function') renderGoogleBtn(); }, 150);
 };
 
-// After SSO/email login, if pendingUpgrade → go to Stripe
-var _origHandleGoogle=typeof handleGoogleCredential==='function'?handleGoogleCredential:null;
+// Google sign-in: identity only (the original handler, which looked the email up for a paid licence, is replaced)
 handleGoogleCredential=function(response){
+  if(!response||!response.credential)return;
   var parts=response.credential.split('.');
   var payload=JSON.parse(atob(parts[1].replace(/-/g,'+').replace(/_/g,'/')));
   var email=payload.email;
-  var name=payload.name||email.split('@')[0];
-  var picture=payload.picture||null;
-  checkPaid(email).then(function(paid){
-    user={email:email,name:name,picture:picture,isPaid:paid,provider:'google'};
-    LS.set('kanbi_user',user);
-    closeModalById('modal-login');
-    renderAuth();
-    // Paywall removed from the UI — never auto-open the upgrade modal
-    // after sign-in, no matter what checkPaid() returns.
-    pendingUpgrade=false;
-  });
+  user={email:email,name:payload.name||email.split('@')[0],picture:payload.picture||null,provider:'google'};
+  LS.set('kanbi_user',user);
+  closeModalById('modal-login');
+  renderAuth();
 };
+window.handleGoogleCredential=handleGoogleCredential;
 
-// Override doEmailLogin to handle pendingUpgrade
-var _origDoEmailLogin=typeof doEmailLogin==='function'?doEmailLogin:null;
 doEmailLogin=async function(){
   var email=document.getElementById('login-email').value.trim();
   var errEl=document.getElementById('login-error');
-  var btnEl=document.getElementById('btn-login-submit');
   if(!email.includes('@')){
     if(errEl){errEl.textContent='Enter a valid email.';errEl.style.display='block';}
     return;
   }
   if(errEl)errEl.style.display='none';
-  btnEl.textContent='Checking…';btnEl.disabled=true;
-  var paid=await checkPaid(email);
-  btnEl.textContent='Continue with email';btnEl.disabled=false;
-  user={email:email,name:email.split('@')[0],picture:null,isPaid:paid,provider:'email'};
+  user={email:email,name:email.split('@')[0],picture:null,provider:'email'};
   LS.set('kanbi_user',user);
   closeModalById('modal-login');
   renderAuth();
-  if(pendingUpgrade){
-    pendingUpgrade=false;
-    if(!paid){setTimeout(function(){goToStripe(email);},300);}
-    return;
-  }
-  // No auto-upgrade redirect — user initiates
 };
 </script>
 
 
 <script>
-/* ── UPGRADE MODAL FLOW ── */
-
-function handleUpgradeCTA(){
-  if(user&&user.email){
-    // Already signed in - go direct to Stripe
-    closeModalById('modal-upgrade');
-    goToStripe(user.email);
-  } else {
-    // Not signed in - trigger SSO, then Stripe
-    closeModalById('modal-upgrade');
-    pendingUpgrade=true;
-    var title=document.getElementById('login-modal-title');
-    var sub=document.getElementById('login-modal-sub');
-    if(title)title.textContent='// one_step_away';
-    if(sub)sub.textContent='Sign in to continue. Your email will be linked to your Pro licence.';
-    openModalById('modal-login');
-  }
-}
-
-// Update CTA text when upgrade modal opens
+/* Re-render the Google button each time the sign-in modal opens (needed after the modal was closed) */
 var _baseOpenModalById=openModalById;
 openModalById=function(id){
   if(id==='modal-login'){
-    // Re-render Google button each time modal opens (needed after modal was closed)
     setTimeout(function(){ if(typeof renderGoogleBtn==='function') renderGoogleBtn(); }, 100);
-  }
-  if(id==='modal-upgrade'){
-    var ctaText=document.getElementById('upgrade-cta-text');
-    if(ctaText){
-      if(user&&user.email){
-        ctaText.textContent='Pay now · €9 →';
-      } else {
-        ctaText.innerHTML='Sign in with Google &amp; pay &middot; €9 &rarr;';
-      }
-    }
   }
   _baseOpenModalById(id);
 };
-
-// openUpgrade always shows the modal now (with features+price)
-// Only open upgrade if user explicitly clicked — 
-// block auto-calls from obfuscated code via a flag
-var _upgradeUserInitiated = false;
-var _origOpenUpgradeModal = function(){ openModalById('modal-upgrade'); };
-
-openUpgrade=function(){
-  // If called from setTimeout in obfuscated code without user gesture, block it
-  if(!_upgradeUserInitiated){
-    // Check if this was triggered by a setTimeout (no user event on stack)
-    try {
-      if(!window.event && !_upgradeUserInitiated) return;
-    } catch(e){}
-  }
-  _upgradeUserInitiated = false;
-  openModalById('modal-upgrade');
-};
-
-// Wrap button clicks to set the flag
-function userOpenUpgrade(){
-  _upgradeUserInitiated = true;
-  openUpgrade();
-}
 </script>
 
 
 <script>
-/* ── Cloud save hook ── */
-var _origSave = typeof save === 'function' ? save : function(){};
-save = function(){
-  _origSave();
-  if(user && user.isPaid && typeof cloudSave === 'function') cloudSave();
-};
-
-// Belt-and-suspenders: intercept localStorage writes to detect any save
-var _origSetItem = localStorage.setItem.bind(localStorage);
-localStorage.setItem = function(key, value){
-  _origSetItem(key, value);
-  if(key === 'kanbi_tasks' || key === 'kanbi_states'){
-    if(user && user.isPaid && typeof cloudSave === 'function'){
-      clearTimeout(window._cloudSaveTimer);
-      window._cloudSaveTimer = setTimeout(cloudSave, 800); // debounce 800ms
-    }
-  }
-};
-
 /* ── THEME TOGGLE ── */
 // The theme is stored as a plain string ('light' | 'dark'), the same value nimble/theme.js and the landing read and write
 // (the app's LS helper stores JSON, which the landing could not read). Older quoted values are still understood.
